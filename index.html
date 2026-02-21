@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Klok">
+<title>Klok</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; background:#000; overflow:hidden; }
+body {
+  color:#00ff41;
+  font-family:'Courier New', Courier, monospace;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  -webkit-user-select:none;
+  user-select:none;
+}
+#dim {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:#000; opacity:0; pointer-events:none; z-index:9000;
+}
+.topbalk {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 16px 6px;
+}
+#wekkerStatus { font-size:13px; letter-spacing:0.1em; text-shadow:0 0 8px #00ff41; min-height:20px; }
+.dim-rij { display:flex; align-items:center; gap:8px; }
+.dim-label { font-size:11px; letter-spacing:0.1em; opacity:0.55; }
+input[type=range] {
+  -webkit-appearance:none; appearance:none;
+  width:90px; height:8px; background:#004010; border-radius:4px; outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:28px; height:28px;
+  border-radius:50%; background:#00ff41; box-shadow:0 0 8px #00ff41; cursor:pointer;
+}
+.scherm {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  padding:8px 14px; overflow:hidden;
+}
+.panel { display:none; flex-direction:column; align-items:center; gap:18px; width:100%; max-width:420px; }
+.panel.zichtbaar { display:flex; }
+.panel-titel { font-size:12px; letter-spacing:0.3em; opacity:0.5; }
+.klok-wrap { text-align:center; line-height:1; }
+#klokTijd {
+  font-size:21vw; letter-spacing:0.03em;
+  text-shadow:0 0 8px #00ff41, 0 0 25px #00ff41, 0 0 55px #00ff41, 0 0 90px #00ff41;
+}
+#klokSec {
+  font-size:7.5vw; vertical-align:super; margin-left:4px;
+  text-shadow:0 0 6px #00ff41, 0 0 18px #00ff41, 0 0 38px #00ff41;
+}
+#klokDatum { font-size:3.5vw; opacity:0.6; letter-spacing:0.18em; margin-top:10px; text-shadow:0 0 6px #00ff41; }
+.kiezer { display:flex; align-items:center; gap:8px; }
+.kiezer-sep { font-size:9vw; opacity:0.4; line-height:1; }
+.kiezer-kolom { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.pijl-knop {
+  background:rgba(0,255,65,0.07); border:1px solid rgba(0,255,65,0.4);
+  color:#00ff41; width:54px; height:54px; border-radius:8px; font-size:20px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; touch-action:manipulation;
+}
+.pijl-knop:active { background:rgba(0,255,65,0.22); }
+.kiezer-waarde { font-size:9.5vw; min-width:2ch; text-align:center; text-shadow:0 0 16px #00ff41; line-height:1; }
+.knop {
+  border:1px solid #00ff41; background:transparent;
+  color:#00ff41; font-family:'Courier New', Courier, monospace;
+  font-size:13px; letter-spacing:0.18em; padding:14px 22px; border-radius:6px;
+  cursor:pointer; text-shadow:0 0 7px #00ff41; box-shadow:0 0 8px rgba(0,255,65,0.15);
+  min-width:140px; touch-action:manipulation; -webkit-appearance:none; appearance:none;
+}
+.knop:active { background:rgba(0,255,65,0.13); }
+.knop.rood { border-color:#ff4040; color:#ff4040; text-shadow:0 0 7px #ff4040; box-shadow:0 0 8px rgba(255,64,64,0.15); }
+.knop-rij { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+#timerDisplay { font-size:12.5vw; letter-spacing:0.04em; text-shadow:0 0 8px #00ff41, 0 0 25px #00ff41, 0 0 50px #00ff41; line-height:1; }
+.presets { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+.preset {
+  background:rgba(0,255,65,0.05); border:1px solid rgba(0,255,65,0.3);
+  color:#00ff41; font-family:'Courier New', Courier, monospace;
+  font-size:11px; letter-spacing:0.13em; padding:11px 13px; border-radius:4px;
+  cursor:pointer; touch-action:manipulation; -webkit-appearance:none; appearance:none;
+}
+.preset:active { background:rgba(0,255,65,0.2); }
+.alarm-info { font-size:12px; letter-spacing:0.13em; opacity:0.7; min-height:18px; text-align:center; }
+.nav {
+  display:flex; justify-content:space-around;
+  padding:8px 0 30px; border-top:1px solid rgba(0,255,65,0.12); background:rgba(0,0,0,0.88);
+}
+.nav-knop {
+  background:none; border:none; color:#00ff41;
+  font-family:'Courier New', Courier, monospace; font-size:11px; letter-spacing:0.14em;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:10px 20px; opacity:0.4; cursor:pointer; touch-action:manipulation;
+}
+.nav-knop.actief { opacity:1; text-shadow:0 0 10px #00ff41; }
+.nav-knop svg { width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.5; }
+#alarmPopup {
+  display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.96); z-index:8000;
+  flex-direction:column; align-items:center; justify-content:center; gap:28px;
+}
+#alarmPopup.zichtbaar { display:flex; }
+#popupTitel { font-size:6vw; letter-spacing:0.28em; text-shadow:0 0 20px #00ff41; animation:knip 0.5s step-end infinite; }
+#popupTijd { font-size:15vw; text-shadow:0 0 8px #00ff41, 0 0 25px #00ff41, 0 0 70px #00ff41; }
+@keyframes knip { 50% { opacity:0; } }
+@media (orientation:landscape) {
+  #klokTijd { font-size:28vh; } #klokSec { font-size:11vh; }
+  #klokDatum { font-size:2.8vh; } .kiezer-waarde { font-size:7.5vh; }
+  .kiezer-sep { font-size:7vh; } #timerDisplay { font-size:9.5vh; }
+  .scherm { padding:2px 12px; } .topbalk { padding:4px 16px 0; }
+  .nav { padding:2px 0 8px; } .panel { gap:6px; }
+}
+@media (orientation:landscape) and (max-height:360px) { #klokDatum { display:none; } }
+</style>
+</head>
+<body>
+<div id="dim"></div>
+<div class="topbalk">
+  <div id="wekkerStatus"></div>
+  <div class="dim-rij">
+    <span class="dim-label">DIM</span>
+    <input type="range" id="dimSlider" min="0" max="0.92" step="0.01" value="0">
+  </div>
+</div>
+<div class="scherm">
+  <div class="panel zichtbaar" id="panelKlok">
+    <div class="klok-wrap">
+      <span id="klokTijd">--:--</span><span id="klokSec">--</span>
+      <div id="klokDatum"></div>
+    </div>
+  </div>
+  <div class="panel" id="panelWekker">
+    <div class="panel-titel">WEKKER</div>
+    <div class="kiezer">
+      <div class="kiezer-kolom">
+        <button class="pijl-knop" id="wHOmhoog">&#9650;</button>
+        <div class="kiezer-waarde" id="wekkerUur">07</div>
+        <button class="pijl-knop" id="wHOmlaag">&#9660;</button>
+      </div>
+      <div class="kiezer-sep">:</div>
+      <div class="kiezer-kolom">
+        <button class="pijl-knop" id="wMOmhoog">&#9650;</button>
+        <div class="kiezer-waarde" id="wekkerMin">00</div>
+        <button class="pijl-knop" id="wMOmlaag">&#9660;</button>
+      </div>
+    </div>
+    <div class="alarm-info" id="wekkerInfo"></div>
+    <div class="knop-rij">
+      <button class="knop" id="wekkerInstellen">WEKKER INSTELLEN</button>
+      <button class="knop rood" id="wekkerAnnuleren" style="display:none">ANNULEREN</button>
+    </div>
+  </div>
+  <div class="panel" id="panelTimer">
+    <div class="panel-titel">TIMER</div>
+    <div id="timerDisplay">00:05:00</div>
+    <div class="kiezer" id="timerKiezer">
+      <div class="kiezer-kolom">
+        <button class="pijl-knop" id="tHOmhoog">&#9650;</button>
+        <div class="kiezer-waarde" id="timerUur">00</div>
+        <button class="pijl-knop" id="tHOmlaag">&#9660;</button>
+      </div>
+      <div class="kiezer-sep">:</div>
+      <div class="kiezer-kolom">
+        <button class="pijl-knop" id="tMOmhoog">&#9650;</button>
+        <div class="kiezer-waarde" id="timerMin">05</div>
+        <button class="pijl-knop" id="tMOmlaag">&#9660;</button>
+      </div>
+      <div class="kiezer-sep">:</div>
+      <div class="kiezer-kolom">
+        <button class="pijl-knop" id="tSOmhoog">&#9650;</button>
+        <div class="kiezer-waarde" id="timerSec">00</div>
+        <button class="pijl-knop" id="tSOmlaag">&#9660;</button>
+      </div>
+    </div>
+    <div class="presets" id="timerPresets">
+      <button class="preset" id="p5">5 MIN</button>
+      <button class="preset" id="p10">10 MIN</button>
+      <button class="preset" id="p15">15 MIN</button>
+      <button class="preset" id="p30">30 MIN</button>
+      <button class="preset" id="p60">1 UUR</button>
+    </div>
+    <div class="knop-rij">
+      <button class="knop" id="timerStart">START</button>
+      <button class="knop rood" id="timerStop" style="display:none">STOP</button>
+      <button class="knop" id="timerReset" style="display:none">RESET</button>
+    </div>
+  </div>
+</div>
+<nav class="nav">
+  <button class="nav-knop actief" id="navKlok">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>KLOK
+  </button>
+  <button class="nav-knop" id="navWekker">
+    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="2" y1="5" x2="5.27" y2="8.27"/><line x1="22" y1="5" x2="18.73" y2="8.27"/></svg>ALARM
+  </button>
+  <button class="nav-knop" id="navTimer">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>TIMER
+  </button>
+</nav>
+<div id="alarmPopup">
+  <div id="popupTitel">WEKKER</div>
+  <div id="popupTijd"></div>
+  <button class="knop" id="stopKnop" style="font-size:15px;padding:16px 38px;touch-action:manipulation;">UITSCHAKELEN</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  function el(id) {
+    try { return document.getElementById(id); } catch(e) { return null; }
+  }
+
+  function pad(n) {
+    try { return n < 10 ? '0' + n : String(n); } catch(e) { return '00'; }
+  }
+
+  function stel(id, tekst) {
+    try { var e = el(id); if (e) e.textContent = tekst; } catch(e) {}
+  }
+
+  function toonEl(id, zichtbaar) {
+    try { var e = el(id); if (e) e.style.display = zichtbaar ? 'inline-block' : 'none'; } catch(e) {}
+  }
+
+  function toonFlex(id, zichtbaar) {
+    try { var e = el(id); if (e) e.style.display = zichtbaar ? 'flex' : 'none'; } catch(e) {}
+  }
+
+  function klik(id, fn) {
+    try {
+      var e = el(id);
+      if (e) e.addEventListener('click', function() { try { fn(); } catch(err) {} });
+    } catch(e) {}
+  }
+
+  // ---- DIM ----
+  try {
+    el('dimSlider').addEventListener('input', function() {
+      try { el('dim').style.opacity = this.value; } catch(e) {}
+    });
+  } catch(e) {}
+
+  // ---- GELUID ----
+  var audioCtx = null;
+  var geluidInterval = null;
+
+  function speelToon() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      var freq = [880, 1100, 880, 1100, 880];
+      var t = audioCtx.currentTime;
+      for (var i = 0; i < freq.length; i++) {
+        var osc  = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = freq[i];
+        osc.type = 'square';
+        gain.gain.setValueAtTime(0.22, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+        osc.start(t);
+        osc.stop(t + 0.17);
+        t += 0.20;
+      }
+    } catch(e) {}
+  }
+
+  function startGeluid() {
+    try { speelToon(); geluidInterval = setInterval(speelToon, 1600); } catch(e) {}
+  }
+
+  function stopGeluid() {
+    try { clearInterval(geluidInterval); geluidInterval = null; } catch(e) {}
+  }
+
+  // ---- KLOK ----
+  var DAGEN   = ['ZO','MA','DI','WO','DO','VR','ZA'];
+  var MAANDEN = ['JAN','FEB','MRT','APR','MEI','JUN','JUL','AUG','SEP','OKT','NOV','DEC'];
+
+  var wUur = 7, wMin = 0, wAan = false, wGebeld = false;
+
+  function klokTick() {
+    try {
+      var nu = new Date();
+      stel('klokTijd', pad(nu.getHours()) + ':' + pad(nu.getMinutes()));
+      stel('klokSec',  pad(nu.getSeconds()));
+      stel('klokDatum', DAGEN[nu.getDay()] + ', ' + nu.getDate() + ' ' + MAANDEN[nu.getMonth()]);
+      if (wAan && !wGebeld && nu.getHours() === wUur && nu.getMinutes() === wMin && nu.getSeconds() === 0) {
+        wGebeld = true;
+        showAlarm('WEKKER', pad(wUur) + ':' + pad(wMin));
+      }
+    } catch(e) {}
+    setTimeout(klokTick, 1000);
+  }
+  setTimeout(klokTick, 0);
+
+  // ---- NAVIGATIE ----
+  function toonPanel(naam) {
+    try {
+      var ps = ['Klok','Wekker','Timer'];
+      for (var i = 0; i < ps.length; i++) {
+        try { el('panel' + ps[i]).classList.remove('zichtbaar'); } catch(e) {}
+        try { el('nav'   + ps[i]).classList.remove('actief'); } catch(e) {}
+      }
+      el('panel' + naam).classList.add('zichtbaar');
+      el('nav'   + naam).classList.add('actief');
+    } catch(e) {}
+  }
+
+  klik('navKlok',   function() { toonPanel('Klok'); });
+  klik('navWekker', function() { toonPanel('Wekker'); });
+  klik('navTimer',  function() { toonPanel('Timer'); });
+
+  // ---- WEKKER ----
+  function updateWekker() {
+    stel('wekkerUur', pad(wUur));
+    stel('wekkerMin', pad(wMin));
+  }
+
+  klik('wHOmhoog', function() { wUur = (wUur + 1)  % 24; updateWekker(); });
+  klik('wHOmlaag', function() { wUur = (wUur + 23) % 24; updateWekker(); });
+  klik('wMOmhoog', function() { wMin = (wMin + 1)  % 60; updateWekker(); });
+  klik('wMOmlaag', function() { wMin = (wMin + 59) % 60; updateWekker(); });
+
+  klik('wekkerInstellen', function() {
+    wAan = true; wGebeld = false;
+    stel('wekkerInfo', 'INGESTELD OP ' + pad(wUur) + ':' + pad(wMin));
+    toonEl('wekkerAnnuleren', true);
+    stel('wekkerInstellen', 'OPNIEUW INSTELLEN');
+    stel('wekkerStatus', '\u23F0 ' + pad(wUur) + ':' + pad(wMin));
+  });
+
+  klik('wekkerAnnuleren', function() {
+    wAan = false; wGebeld = false;
+    stel('wekkerInfo', '');
+    toonEl('wekkerAnnuleren', false);
+    stel('wekkerInstellen', 'WEKKER INSTELLEN');
+    stel('wekkerStatus', '');
+  });
+
+  // ---- TIMER ----
+  var tH = 0, tM = 5, tS = 0;
+  var tLoopt = false, tRef = null, tEinde = null;
+
+  function updateTimerKiezer() {
+    stel('timerUur', pad(tH));
+    stel('timerMin', pad(tM));
+    stel('timerSec', pad(tS));
+    stel('timerDisplay', pad(tH) + ':' + pad(tM) + ':' + pad(tS));
+  }
+
+  function updateTimerDisplay(sec) {
+    try {
+      var h = Math.floor(sec / 3600);
+      var m = Math.floor((sec % 3600) / 60);
+      var s = sec % 60;
+      stel('timerDisplay', pad(h) + ':' + pad(m) + ':' + pad(s));
+    } catch(e) {}
+  }
+
+  klik('tHOmhoog', function() { if (!tLoopt) { tH = (tH + 1)  % 24; updateTimerKiezer(); } });
+  klik('tHOmlaag', function() { if (!tLoopt) { tH = (tH + 23) % 24; updateTimerKiezer(); } });
+  klik('tMOmhoog', function() { if (!tLoopt) { tM = (tM + 1)  % 60; updateTimerKiezer(); } });
+  klik('tMOmlaag', function() { if (!tLoopt) { tM = (tM + 59) % 60; updateTimerKiezer(); } });
+  klik('tSOmhoog', function() { if (!tLoopt) { tS = (tS + 1)  % 60; updateTimerKiezer(); } });
+  klik('tSOmlaag', function() { if (!tLoopt) { tS = (tS + 59) % 60; updateTimerKiezer(); } });
+
+  klik('p5',  function() { if (!tLoopt) { tH=0; tM=5;  tS=0; updateTimerKiezer(); } });
+  klik('p10', function() { if (!tLoopt) { tH=0; tM=10; tS=0; updateTimerKiezer(); } });
+  klik('p15', function() { if (!tLoopt) { tH=0; tM=15; tS=0; updateTimerKiezer(); } });
+  klik('p30', function() { if (!tLoopt) { tH=0; tM=30; tS=0; updateTimerKiezer(); } });
+  klik('p60', function() { if (!tLoopt) { tH=1; tM=0;  tS=0; updateTimerKiezer(); } });
+
+  klik('timerStart', function() {
+    var totaal = tH * 3600 + tM * 60 + tS;
+    if (totaal <= 0) return;
+    tLoopt = true;
+    tEinde = Date.now() + totaal * 1000;
+    toonFlex('timerKiezer',  false);
+    toonFlex('timerPresets', false);
+    toonEl('timerStart', false);
+    toonEl('timerStop',  true);
+    tRef = setInterval(function() {
+      try {
+        var over = Math.max(0, Math.round((tEinde - Date.now()) / 1000));
+        updateTimerDisplay(over);
+        if (over <= 0) {
+          clearInterval(tRef); tLoopt = false;
+          toonEl('timerStop',  false);
+          toonEl('timerReset', true);
+          showAlarm('TIMER KLAAR', '\u2713');
+        }
+      } catch(e) {}
+    }, 500);
+  });
+
+  klik('timerStop', function() {
+    clearInterval(tRef); tLoopt = false;
+    toonFlex('timerKiezer',  true);
+    toonFlex('timerPresets', true);
+    toonEl('timerStart', true);
+    toonEl('timerStop',  false);
+    updateTimerKiezer();
+  });
+
+  klik('timerReset', function() {
+    toonFlex('timerKiezer',  true);
+    toonFlex('timerPresets', true);
+    toonEl('timerStart', true);
+    toonEl('timerReset', false);
+    updateTimerKiezer();
+  });
+
+  // ---- ALARM POPUP ----
+  function showAlarm(titel, tijdStr) {
+    try {
+      stel('popupTitel', titel);
+      stel('popupTijd',  tijdStr);
+      el('alarmPopup').classList.add('zichtbaar');
+      startGeluid();
+    } catch(e) {}
+  }
+
+  klik('stopKnop', function() {
+    try { el('alarmPopup').classList.remove('zichtbaar'); } catch(e) {}
+    stopGeluid();
+  });
+
+}); // einde DOMContentLoaded
+</script>
+</body>
+</html>
