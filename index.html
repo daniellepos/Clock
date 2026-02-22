@@ -20,17 +20,7 @@ body {
   -webkit-user-select:none;
   user-select:none;
 }
-#dim {
-  position:fixed;
-  top:-10px; left:-10px; right:-10px; bottom:-10px;
-  background:#000;
-  opacity:0;
-  pointer-events:none;
-  z-index:9000;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  will-change: opacity;
-}
+#dim { display:none; }
 .topbalk {
   display:flex; justify-content:space-between; align-items:center;
   padding:14px 16px 6px;
@@ -248,7 +238,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // ---- DIM ----
   try {
     el('dimSlider').addEventListener('input', function() {
-      try { el('dim').style.opacity = this.value; } catch(e) {}
+      try {
+        var helderheid = 1 - (this.value * 0.95);
+        document.documentElement.style.webkitFilter = 'brightness(' + helderheid + ')';
+        document.documentElement.style.filter = 'brightness(' + helderheid + ')';
+      } catch(e) {}
     });
   } catch(e) {}
 
