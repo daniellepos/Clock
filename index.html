@@ -26,11 +26,24 @@ body {
   padding:14px 16px 6px;
 }
 #wekkerStatus { font-size:13px; letter-spacing:0.1em; text-shadow:0 0 8px #00ff41; min-height:20px; }
-.dim-rij { display:flex; align-items:center; gap:8px; }
+.dim-rij {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.5);
+  padding: 6px 10px;
+  border-radius: 20px;
+  touch-action: none;
+}
 .dim-label { font-size:11px; letter-spacing:0.1em; opacity:0.55; }
 input[type=range] {
   -webkit-appearance:none; appearance:none;
-  width:90px; height:8px; background:#004010; border-radius:4px; outline:none; cursor:pointer;
+  width:90px; height:8px; background:#004010; border-radius:4px; outline:none;
+  cursor:pointer; touch-action:manipulation;
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance:none; width:28px; height:28px;
